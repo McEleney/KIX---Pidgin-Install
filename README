@@ -2,4 +2,4 @@ This is a KIXtart (http://www.kixtart.org/) script that
 will check to see if Pidgin is installed, install it silently,
 install the spellcheck dictionaries, add a startup link and
 copy over custom user settings (by default, a connection to a 
-Jabber server like eJabberd. 
+Jabber server like eJabberd). 

@@ -48,8 +48,8 @@ If Not Exist("$APPDATA\.purple\accounts.xml")
 	$password = Replace($password,"o","0")
 	$password = Replace($password,"u","7")
 	;Load account template file
-	? "Loading $installerpath\accounttemplate..."
-	$accountfile = ReadFile($installerpath + 'accounttemplate')
+	? "Loading $installerpath\accounttemplate.xml..."
+	$accountfile = ReadFile($installerpath + 'accounttemplate.xml')
 	$i = 0
 	;Customize the template with the user's info. Probably not the most efficient 
 	;method, but it gets the job done.

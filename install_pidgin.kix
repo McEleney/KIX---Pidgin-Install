@@ -3,7 +3,7 @@
 ;
 ;Edit the following:
 ;
-;Server hosting the pidgin installer
+;Server hosting the pidgin installer. No need for leading \\
 $SERVERNAME = "SERVER"
 ;Path to Pidgin or Pidgin-offline install file, accounttemplate, etc
 ;Include trailing backslash

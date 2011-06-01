@@ -3,7 +3,7 @@
 <account version='1.0'>
 	<account>
 		<protocol>prpl-jabber</protocol>
-		<name>!USERNAME!@JABBERSERVER/work</name>
+		<name>!USERNAME!@!JABBERSERVER!/work</name>
 		<password>!PASSWORD!</password>
 		<alias>!FULLNAME!</alias>
 		<statuses>

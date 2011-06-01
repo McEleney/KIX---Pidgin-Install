@@ -1,6 +1,130 @@
 ;Pidgin installer KIX script
 ;Copyright 2011 McEleney Motors <john.rogers@mceleney.com>
 ;
+;Edit the following:
+;
+;Server hosting the pidgin installer
+$SERVERNAME = "SERVER"
+;Path to Pidgin or Pidgin-offline install file, accounttemplate, etc
+;Include trailing backslash
+$INSTALLDIR = "installs\pidgin\"
+;Name of the actual Pidgin install file
+$INSTALLER = "pidgin-offline.exe"
+;Name of your Jabber server
+;i.e. your users are username/JABBERSERVER
+$JABBERSERVER = "JABBERSERVER"
+;Name of your server's certificate (usually the same as your server name)
+$JABBERCERT = "JABBERCERT"
+;Language of the dictionary files. See README.
+$DICT = "en_US"
+;-----------------------------------------------
+;You shouldn't need to edit anything below this.
+;-----------------------------------------------
+
+$installerpath = "\\$SERVERNAME\" + $INSTALLDIR
+$installerexe = $installerpath + $INSTALLER
+If Not Exist($installerexe)
+	? $installerexe + " does not exist! Aborting!"
+	Exit
+EndIf
+;Get version of installation file
+$pVersion = GetFileVersion($installerexe,"ProductVersion")
+;Set some path variables
+$PROGRAMFILES = EXPANDENVIRONMENTVARS(%PROGRAMFILES%)
+$SYSTEMROOT = EXPANDENVIRONMENTVARS(%SYSTEMROOT%)
+$APPDATA = EXPANDENVIRONMENTVARS(%APPDATA%)
+
+? $installerpath
+? $installerexe
+? $pVersion
+? $PROGRAMFILES
+? $SYSTEMROOT
+? $APPDATA
+
+If Not Exist("$APPDATA\.purple\accounts.xml")
+	? "No accounts.xml file, creating one..."
+	;Generate username in the format Firstname.Lastname
+	$username = Replace(@FULLNAME, " ", ".")
+	;Generate simple password based on user's last name. This works for our environment,
+	;where it is understood that IM chats are not secure. It may not work for you!
+	$password = Split(@FULLNAME, " ")
+	$password = $password[1] + "1"
+	$password = Replace($password,"a","4")
+	$password = Replace($password,"e","3")
+	$password = Replace($password,"i","1")
+	$password = Replace($password,"o","0")
+	$password = Replace($password,"u","7")
+	;Load account template file
+	? "Loading $installerpath\accounttemplate..."
+	$accountfile = ReadFile($installerpath + 'accounttemplate')
+	$i = 0
+	;Customize the template with the user's info. Probably not the most efficient 
+	;method, but it gets the job done.
+	For Each $line In $accountfile
+		$line = Replace($line,'!JABBERSERVER!',$JABBERSERVER)
+		$line = Replace($line,'!USERNAME!',$username)
+		$line = Replace($line,'!PASSWORD!',$password)
+		$line = Replace($line,'!FULLNAME!',@FULLNAME)
+		$accountfile[$i] = $line
+		$i = $i + 1
+	Next
+	;This is where Pidgin stores its data
+	If Not Exist("$APPDATA\.purple")
+		MD "$APPDATA\.purple"
+	EndIf
+	? "Writing $APPDATA\.purple\accounts.xml..."
+	WriteFile("$APPDATA\.purple\accounts.xml",$accountfile)
+	If Exist("$APPDATA\.purple\accounts.xml")
+		? "Wrote default accounts.xml file!"
+	Else
+		? "Couldn't create accounts.xml, aborting!"
+		Exit
+	EndIf
+Else
+	? "Found accounts.xml file!"
+EndIf
+;Copy over certificates file. Make sure you set this variable above!
+If Not Exist("$APPDATA\.purple\certificates\x509\tls_peers\$JABBERCERT")
+	? "Copying certificates..."
+	Copy $installerpath + "certificates\" "$APPDATA\.purple\certificates\" /s
+EndIf
+If Exist("$PROGRAMFILES\Pidgin\Pidgin.exe") 
+	? "Pidgin is installed already!"
+	? "Checking if upgrade is available..."
+	$cVersion = GetFileVersion("$PROGRAMFILES\Pidgin\Pidgin.exe")
+	? "Current version:   $cVersion"
+	? "Available version: $pVersion"
+	If Not $cVersion = $pVersion
+		? "Upgrading..."
+		;Can't upgrade Pidgin if it's already running, so kill it.
+		Shell("$SYSTEMROOT\system32\taskkill.exe /F /IM pidgin.exe")
+		;Remove autostart in case Pidgin wasn't running yet
+		;because we don't want it to start during the upgrade.
+		DelValue("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run","Pidgin")
+		Shell("\\$SERVERNAME\installs\pidgin\pidgin-offline.exe /S")	
+		WriteValue("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run","Pidgin","$PROGRAMFILES\Pidgin\Pidgin.exe","REG_SZ")
+		? "Done!"
+	EndIf
+Else
+	? "Pidgin is not installed!"
+	? "Installing Pidgin in silent mode..."
+	Shell("\\$SERVERNAME\installs\pidgin\pidgin-offline.exe /S /DS=1 /SMS=1")
+	? "Setting Pidgin to run at startup..."
+	WriteValue("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run","Pidgin","$PROGRAMFILES\Pidgin\Pidgin.exe","REG_SZ")
+	? "Done!"
+EndIf
+
+;Check for spellcheck files and copy if they're not there
+If Not Exist("$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell\$DICT.dic")
+	If Not Exist("$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell")
+		MD "$PROGRAMFILES\Pidgin\spellcheck\share"
+		MD "$PROGRAMFILES\Pidgin\spellcheck\share\enchant"
+		MD "$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell"
+	EndIf
+	? "Copying spellcheck dictionaries..."
+	Copy $installerpath + "$DICT\*" "$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell\"
+EndIf
+
 ;The following functions taken from http://www.kixtart.org/udf/
 ;Why reinvent the wheel?
 Function ReadFile($file)
@@ -31,89 +155,3 @@ Function Replace($String,$SS,$RS)
 	$Replace=Split($String,$SS)
 	$Replace=Join($Replace,$RS)
 EndFunction
-
-;Path to Pidgin or Pidgin-offline install file
-$INSTALLER = "\\SERVER\installs\pidgin\pidgin-offline.exe"
-If Not Exist($INSTALLER)
-	? $INSTALLER + " does not exist! Aborting!"
-	Exit
-EndIf
-$pVersion = GetFileVersion("\\SERVER\installs\pidgin\pidgin-offline.exe","ProductVersion")
-$PROGRAMFILES = EXPANDENVIRONMENTVARS(%PROGRAMFILES%)
-$SYSTEMROOT = EXPANDENVIRONMENTVARS(%SYSTEMROOT%)
-$APPDATA = EXPANDENVIRONMENTVARS(%APPDATA%)
-
-$IPFirstByte = Left(@IPAddress0,3)
-If Not $IPFirstByte = "198"
-	? "Not directly connected to the dealership network, aborting!"
-	Exit
-EndIf
-If Not Exist("$APPDATA\.purple\accounts.xml")
-	? "No accounts.xml file, creating one..."
-	$password = Split(@FULLNAME, " ")
-	$username = Replace(@FULLNAME, " ", ".")
-	$password = $password[1] + "1"
-	$password = Replace($password,"a","4")
-	$password = Replace($password,"e","3")
-	$password = Replace($password,"i","1")
-	$password = Replace($password,"o","0")
-	$password = Replace($password,"u","7")
-	$accountfile = ReadFile('\\SERVER\installs\pidgin\accounttemplate')
-	$i = 0
-	For Each $line In $accountfile
-		$line = Replace($line,'!USERNAME!',$username)
-		$line = Replace($line,'!PASSWORD!',$password)
-		$line = Replace($line,'!FULLNAME!',@FULLNAME)
-		$accountfile[$i] = $line
-		$i = $i + 1
-	Next
-	If Not Exist("$APPDATA\.purple")
-		MD "$APPDATA\.purple"
-	EndIf
-	WriteFile("$APPDATA\.purple\accounts.xml",$accountfile)
-	If Exist("$APPDATA\.purple\accounts.xml")
-		? "Wrote default accounts.xml file!"
-	Else
-		? "Couldn't create accounts.xml, aborting!"
-		Exit
-	EndIf
-Else
-	? "Found accounts.xml file!"
-EndIf
-If Not Exist("$APPDATA\.purple\certificates\x509\tls_peers\mceleneychat")
-	? "Copying certificates..."
-	Copy "\\SERVER\installs\pidgin\certificates\" "$APPDATA\.purple\certificates\" /s
-EndIf
-If Exist("$PROGRAMFILES\Pidgin\Pidgin.exe") 
-	? "Pidgin is installed already!"
-	? "Checking if upgrade is available..."
-	$cVersion = GetFileVersion("$PROGRAMFILES\Pidgin\Pidgin.exe")
-	? "Current version:   $cVersion"
-	? "Available version: $pVersion"
-	If Not $cVersion = $pVersion
-		? "Upgrading..."
-		Shell("$SYSTEMROOT\system32\taskkill.exe /F /IM pidgin.exe")
-		DelValue("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run","Pidgin")
-		Shell("\\SERVER\installs\pidgin\pidgin-offline.exe /S")	
-		WriteValue("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run","Pidgin","$PROGRAMFILES\Pidgin\Pidgin.exe","REG_SZ")
-		? "Done!"
-	EndIf
-Else
-	? "Pidgin is not installed!"
-	? "Installing Pidgin in silent mode..."
-	Shell("\\SERVER\installs\pidgin\pidgin-offline.exe /S /DS=1 /SMS=1")
-	? "Setting Pidgin to run at startup..."
-	WriteValue("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run","Pidgin","$PROGRAMFILES\Pidgin\Pidgin.exe","REG_SZ")
-	? "Done!"
-EndIf
-
-;Check for spellcheck files and copy if they're not there
-If Not Exist("$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell\en_US.dic")
-	If Not Exist("$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell")
-		MD "$PROGRAMFILES\Pidgin\spellcheck\share"
-		MD "$PROGRAMFILES\Pidgin\spellcheck\share\enchant"
-		MD "$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell"
-	EndIf
-	? "Copying spellcheck dictionaries..."
-	Copy "\\SERVER\installs\pidgin\en_US\*" "$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell\"
-EndIf

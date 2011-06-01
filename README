@@ -1,5 +1,72 @@
-This is a KIXtart (http://www.kixtart.org/) script that 
-will check to see if Pidgin is installed, install it silently,
-install the spellcheck dictionaries, add a startup link and
-copy over custom user settings (by default, a connection to a 
-Jabber server like eJabberd). 
+This is a KIXtart LOGIN (not startup!) script that will:
+* Check to see if Pidgin is installed and install it silently if it is not.
+* If the installed version of Pidgin is outdated by the install file, silently upgrade.
+* Check to see if any accounts are configured and copy in a custom user accounts.xml file if there
+  are not.
+* Install the spellcheck dictionaries.
+* Add a startup link.
+
+It won't:
+* Launch Pidgin on the same boot that it gets installed (unless the script finishes up before 
+  explorer.exe launches). Launching it from the script under Vista/7 would give it privileges Pidgin
+  doesn't need and might introduce unwanted complications like reading from the wrong profile. It 
+  will, however, create a desktop shortcut so the user can launch it immediately.
+* Create accounts on the Jabber server. You must create them in advance. See the section on 
+  passwords below.
+
+ORIGIN
+
+We set up an internal Jabber server to add another method of communication between employees, and
+I needed an easy way to get Pidgin onto all computers with a custom accounts.xml file for each 
+user. 
+
+REQS
+
+* Windows XP/Vista/7 in an AD environment.
+* User accounts set up with proper first and last names. If you use some other format for names 
+  you'll probably need to edit the script a bit, since it relies on @FULLNAME returning "Firstname 
+  Lastname".
+* Install file for Pidgin 2.7.0 or higher (http://www.pidgin.im/).
+* Working Jabber/XMPP server with accounts and passwords preconfigured (I've only tested ejabberd).
+* KIXtart executibles (http://www.kixtart.org/) and preferably an existing KIX login script.
+
+USAGE
+
+Grab Pidgin's install file (or the offline installer that includes GTK) and put it in a network 
+location users can reach. Place all the files and folders here in that same location. The KIX script
+itself can be located anywhere; given that (as written) it generates user passwords internally 
+(see PASSWORDS) you probably don't want it somewhere where users can see it. 
+
+Place the certificate for your Jabber server in certificates\x509\tls_peers.  
+
+Pidgin 2.7.0 and up uses dictionary files from OpenOffice. Grab the spellcheck dictionary files 
+from here: 
+http://ftp.osuosl.org/pub/openoffice/contrib/dictionaries/
+
+You want <your language code>.zip. For example, US English is en_US.zip. Extract these files into
+the dict directory. 
+
+Now, edit install_pidgin.kix and change the appropriate variables as instructed in the comments.
+
+Test the script on a workstation by running KIX32 install_pidgin.kix. 
+
+If it works, then call install_pidgin.kix from your existing kix script, or add a link to it 
+in your GPO.
+
+PASSWORDS
+
+The script generates passwords from the last name of the current user, substituting the 
+following...
+a=4
+e=3
+i=1
+o=0
+u=7
+...and appending 1 to the end. 
+Bob Johnson's password would be J0hns0n1. 
+Dave Engle's password would Engl31 (remember, the substitution is case-insensitive).
+Secure? No way. IM is not and is not intended to be secure communication. 
+
+--
+John Rogers <john.rogers@mceleney.com>
+McEleney Motors

@@ -34,13 +34,6 @@ $PROGRAMFILES = EXPANDENVIRONMENTVARS(%PROGRAMFILES%)
 $SYSTEMROOT = EXPANDENVIRONMENTVARS(%SYSTEMROOT%)
 $APPDATA = EXPANDENVIRONMENTVARS(%APPDATA%)
 
-? $installerpath
-? $installerexe
-? $pVersion
-? $PROGRAMFILES
-? $SYSTEMROOT
-? $APPDATA
-
 If Not Exist("$APPDATA\.purple\accounts.xml")
 	? "No accounts.xml file, creating one..."
 	;Generate username in the format Firstname.Lastname
@@ -122,7 +115,7 @@ If Not Exist("$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell\$DICT.dic")
 		MD "$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell"
 	EndIf
 	? "Copying spellcheck dictionaries..."
-	Copy $installerpath + "$DICT\*" "$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell\"
+	Copy $installerpath + "dict\*" "$PROGRAMFILES\Pidgin\spellcheck\share\enchant\myspell\"
 EndIf
 
 ;The following functions taken from http://www.kixtart.org/udf/
